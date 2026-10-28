@@ -1,0 +1,17 @@
+time=2026-10-23T12:22:15Z correlation_id=222b482f3daea5403b6e2a9efd14e282 level=INFO message=create order request
+time=2026-10-23T12:22:23Z correlation_id=901aa441d5096dd2318d27fade7d451f level=INFO message=create payment request
+time=2026-10-23T12:22:42Z correlation_id=f562fc35997493a08e852d799024f33b level=INFO message=create payment request
+time=2026-10-23T12:22:43Z correlation_id=f562fc35997493a08e852d799024f33b level=ERROR message=PayPal order creation failed
+time=2026-10-23T12:22:51Z correlation_id=6623931f1ffc7c318c8c7d23d1402a2c level=INFO message=create payment request
+time=2026-10-23T12:23:06Z correlation_id=d3bf8d20e8bec5848c32857ca9bf767f level=INFO message=create payment request
+time=2026-10-23T12:23:07Z correlation_id=d3bf8d20e8bec5848c32857ca9bf767f level=ERROR message=PayPal order creation failed
+time=2026-10-23T12:24:02Z correlation_id=d3e8d42cffe7e33142839a319eb41455 level=INFO message=create payment request
+time=2026-10-23T12:24:02Z correlation_id=d3e8d42cffe7e33142839a319eb41455 level=ERROR message=PayPal order creation failed
+time=2026-10-23T12:24:18Z correlation_id=ae92c0c2d690af51e1839d9634eb1e72 level=INFO message=get order request
+time=2026-10-23T12:24:28Z correlation_id=cbab8c24b169305f3ef6b2b4d6c01349 level=INFO message=create payment request
+time=2026-10-23T12:24:28Z correlation_id=cbab8c24b169305f3ef6b2b4d6c01349 level=ERROR message=PayPal order creation failed
+time=2026-10-23T12:26:07Z correlation_id=f0b5a08752b2037a06872318dfd1a0c4 level=INFO message=create payment request
+time=2026-10-23T12:26:08Z correlation_id=f0b5a08752b2037a06872318dfd1a0c4 level=ERROR message=PayPal order creation failed
+time=2026-10-23T12:28:34Z correlation_id=b79b050bcef2263a8f211d1e377d1627 level=INFO message=create order request
+time=2026-10-23T12:28:44Z correlation_id=db0f542217a295745c4bfcbca860073a level=INFO message=create payment request
+time=2026-10-23T13:34:29Z correlation_id=b44ca86b06b0a04ee62d5b1e825d99bf level=INFO message=get order request
