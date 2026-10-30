@@ -29,16 +29,24 @@ type paypalGateway interface {
 type memoryStore struct {
 	mu             sync.Mutex
 	orders         map[string]dto.Order
+	orderOwner     map[string]string
 	payments       map[string]dto.Payment
 	paymentByOrder map[string]string
 }
 
 type handler struct {
-	provider paypalGateway
-	store    *memoryStore
+	provider       paypalGateway
+	store          *memoryStore
+	authServiceURL string
+	authHTTPClient *http.Client
+	allowedOrigins []string
 }
 
 func Server() error {
+	if _, err := authServiceURLFromEnv(); err != nil {
+		return err
+	}
+
 	clientID := os.Getenv("PAYPAL_CLIENT_ID")
 	clientSecret := os.Getenv("PAYPAL_CLIENT_SECRET")
 	if clientID == "" || clientSecret == "" {
@@ -91,9 +99,13 @@ func defaultEnv(value, fallback string) string {
 
 func NewHandler(provider paypalGateway) http.Handler {
 	h := &handler{
-		provider: provider,
+		provider:       provider,
+		authServiceURL: strings.TrimRight(strings.TrimSpace(os.Getenv("AUTH_SERVICE_URL")), "/"),
+		authHTTPClient: &http.Client{Timeout: 5 * time.Second},
+		allowedOrigins: corsAllowedOrigins(),
 		store: &memoryStore{
 			orders:         make(map[string]dto.Order),
+			orderOwner:     make(map[string]string),
 			payments:       make(map[string]dto.Payment),
 			paymentByOrder: make(map[string]string),
 		},
@@ -101,12 +113,13 @@ func NewHandler(provider paypalGateway) http.Handler {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /docs", docsHandler)
+	mux.HandleFunc("GET /sessions/current", h.getCurrentSession)
 	mux.HandleFunc("POST /orders", h.createOrder)
 	mux.HandleFunc("GET /orders/{id}", h.getOrder)
 	mux.HandleFunc("POST /orders/{id}/pay", h.createPayment)
 	mux.HandleFunc("POST /payments/{id}/capture", h.capturePayment)
 	mux.HandleFunc("GET /payments/{id}", h.getPayment)
-	return correlationMiddleware(mux)
+	return correlationMiddleware(corsMiddleware(h.allowedOrigins, h.sessionMiddleware(mux)))
 }
 
 func correlationMiddleware(next http.Handler) http.Handler {
@@ -188,6 +201,7 @@ func (h *handler) createOrder(w http.ResponseWriter, r *http.Request) {
 
 	h.store.mu.Lock()
 	h.store.orders[order.OrderID] = order
+	h.store.orderOwner[order.OrderID] = currentUserID(r)
 	h.store.mu.Unlock()
 	writeJSON(w, http.StatusCreated, order)
 }
@@ -195,9 +209,11 @@ func (h *handler) createOrder(w http.ResponseWriter, r *http.Request) {
 func (h *handler) getOrder(w http.ResponseWriter, r *http.Request) {
 	requestLogger(r).Info("get order request")
 	h.store.mu.Lock()
-	order, ok := h.store.orders[r.PathValue("id")]
+	id := r.PathValue("id")
+	order, ok := h.store.orders[id]
+	ownerID := h.store.orderOwner[id]
 	h.store.mu.Unlock()
-	if !ok {
+	if !ok || ownerID != currentUserID(r) {
 		writeError(w, http.StatusNotFound, "order_not_found", "order was not found")
 		return
 	}
@@ -214,6 +230,10 @@ func (h *handler) createPayment(w http.ResponseWriter, r *http.Request) {
 
 	order, ok := h.store.orders[orderID]
 	if !ok {
+		writeError(w, http.StatusNotFound, "order_not_found", "order was not found")
+		return
+	}
+	if h.store.orderOwner[orderID] != currentUserID(r) {
 		writeError(w, http.StatusNotFound, "order_not_found", "order was not found")
 		return
 	}
@@ -264,6 +284,10 @@ func (h *handler) capturePayment(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "payment_not_found", "payment was not found")
 		return
 	}
+	if h.store.orderOwner[payment.OrderID] != currentUserID(r) {
+		writeError(w, http.StatusNotFound, "payment_not_found", "payment was not found")
+		return
+	}
 	if payment.Status == "COMPLETED" {
 		writeJSON(w, http.StatusOK, payment)
 		return
@@ -293,8 +317,9 @@ func (h *handler) getPayment(w http.ResponseWriter, r *http.Request) {
 	requestLogger(r).Info("get payment request")
 	h.store.mu.Lock()
 	payment, ok := h.store.payments[r.PathValue("id")]
+	ownerID := h.store.orderOwner[payment.OrderID]
 	h.store.mu.Unlock()
-	if !ok {
+	if !ok || ownerID != currentUserID(r) {
 		writeError(w, http.StatusNotFound, "payment_not_found", "payment was not found")
 		return
 	}

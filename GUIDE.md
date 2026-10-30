@@ -4,6 +4,9 @@
 
 1. Create a PayPal developer app and obtain its **Sandbox** client ID and secret.
 2. Copy `.env.example` to `.env` and fill in the sandbox credentials.
+    Set `AUTH_SERVICE_URL` to the base URL of the service that implements
+    `GET /sessions/current`. Optionally set `CORS_ALLOWED_ORIGINS` to a
+    comma-separated list of trusted frontend origins when browser cookies are used.
 3. In PowerShell, load the values before running the app:
 
    ```powershell
@@ -25,6 +28,9 @@ The server uses sandbox unless `PAYPAL_ENV=live` is explicitly set. Do not use l
 4. `GET /orders/{order_id}` or `GET /payments/{payment_id}` to inspect status.
 
 All order and payment records are in memory and are lost when the server stops. This is suitable for local testing, not production.
+Every order and payment endpoint requires a valid bearer token or session cookie
+validated by `AUTH_SERVICE_URL`. Orders and their payments are only accessible to
+the user who created them. `GET /docs` remains public.
 
 ## Checks
 

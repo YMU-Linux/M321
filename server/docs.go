@@ -3,9 +3,9 @@ package server
 import "net/http"
 
 func docsHandler(w http.ResponseWriter, r *http.Request) {
-    w.Header().Set("Content-Type", "text/html; charset=utf-8")
-    w.WriteHeader(http.StatusOK)
-    _, _ = w.Write([]byte(`<!doctype html>
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(`<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
@@ -37,6 +37,7 @@ func docsHandler(w http.ResponseWriter, r *http.Request) {
   <table>
     <thead><tr><th>Method</th><th>Path</th><th>Description</th></tr></thead>
     <tbody>
+      <tr><td>GET</td><td><code>/sessions/current</code></td><td>Validate the caller's session with the auth service.</td></tr>
       <tr><td>POST</td><td><code>/orders</code></td><td>Create an order.</td></tr>
       <tr><td>GET</td><td><code>/orders/{id}</code></td><td>Retrieve an order.</td></tr>
       <tr><td>POST</td><td><code>/orders/{id}/pay</code></td><td>Create a PayPal order and payment.</td></tr>
@@ -45,6 +46,17 @@ func docsHandler(w http.ResponseWriter, r *http.Request) {
       <tr><td>GET</td><td><code>/docs</code></td><td>Display this documentation.</td></tr>
     </tbody>
   </table>
+
+    <h2>Authentication and browser access</h2>
+    <p>Except for <code>GET /docs</code> and CORS preflight requests, endpoints require
+      a valid bearer token or session cookie. The service forwards it to the configured
+      auth service's <code>GET /sessions/current</code>. A successful response is passed
+      through by this endpoint; failed validation denies access. Orders and payments are
+      restricted to the authenticated user who created the order.</p>
+    <p>Set <code>AUTH_SERVICE_URL</code> to the auth service base URL. Set
+      <code>CORS_ALLOWED_ORIGINS</code> to a comma-separated list of trusted browser
+      origins to allow credentialed requests. With no value, non-credentialed CORS uses
+      a wildcard origin.</p>
 
   <h2>Create an order</h2>
   <p><code>POST /orders</code> accepts JSON. Currency is optional and defaults to USD.
